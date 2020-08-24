@@ -96,6 +96,7 @@ defmodule LoggerRemoteBackendTest do
 
     Logger.info("eyy")
     Logger.info("lmao")
+
     Logger.flush()
     Logger.flush()
   end
@@ -119,5 +120,27 @@ defmodule LoggerRemoteBackendTest do
     Logger.info("lmao")
 
     :timer.sleep(100)
+  end
+
+  @tag capture_log: true
+  test "filters by log level" do
+    {:ok, _} =
+      Logger.configure_backend(LoggerRemoteBackend,
+        client: {MockLogger, :log},
+        client_options: %{test: 123},
+        level: :warn
+      )
+
+    MockLogger
+    |> expect(:log, fn %{test: 123}, [{:warn, "warn", _, _}, {:error, "error", _, _}] ->
+      {:ok, []}
+    end)
+
+    Logger.debug("debug")
+    Logger.info("info")
+    Logger.warn("warn")
+    Logger.error("error")
+
+    Logger.flush()
   end
 end
