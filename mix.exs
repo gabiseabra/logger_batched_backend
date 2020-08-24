@@ -1,9 +1,9 @@
-defmodule LoggerRemoteBackend.MixProject do
+defmodule LoggerBatchedBackend.MixProject do
   use Mix.Project
 
   def project do
     [
-      app: :logger_remote_backend,
+      app: :logger_batched_backend,
       version: "0.1.0",
       elixir: "~> 1.9",
       start_permanent: Mix.env() == :prod,
@@ -23,8 +23,6 @@ defmodule LoggerRemoteBackend.MixProject do
   defp deps do
     [
       {:mox, "~> 0.5", only: :test}
-      # {:dep_from_hexpm, "~> 0.3.0"},
-      # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
     ]
   end
 
@@ -33,7 +31,7 @@ defmodule LoggerRemoteBackend.MixProject do
       maintainers: ["Gabriela Seabra"],
       licenses: ["MIT"],
       links: %{
-        "GitHub" => "https://github.com/gabiseabra/logger_remote_backend",
+        "GitHub" => "https://github.com/gabiseabra/logger_batched_backend",
         "Logger" => "https://hexdocs.pm/logger/Logger.html"
       }
     ]

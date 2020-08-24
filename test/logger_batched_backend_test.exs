@@ -1,14 +1,14 @@
-defmodule LoggerRemoteBackendTest do
+defmodule LoggerBatchedBackendTest do
   use ExUnit.Case
 
   import Mox
   require Logger
 
   setup do
-    {:ok, _} = Logger.add_backend(LoggerRemoteBackend, flush: true)
+    {:ok, _} = Logger.add_backend(LoggerBatchedBackend, flush: true)
 
     on_exit(fn ->
-      Logger.remove_backend(LoggerRemoteBackend, flush: true)
+      Logger.remove_backend(LoggerBatchedBackend, flush: true)
     end)
 
     :ok
@@ -20,7 +20,7 @@ defmodule LoggerRemoteBackendTest do
   @tag capture_log: true
   test "calls client function on flush" do
     {:ok, _} =
-      Logger.configure_backend(LoggerRemoteBackend,
+      Logger.configure_backend(LoggerBatchedBackend,
         client: {MockLogger, :log},
         client_options: %{test: 123}
       )
@@ -35,7 +35,7 @@ defmodule LoggerRemoteBackendTest do
   @tag capture_log: true
   test "flushes logs periodically" do
     {:ok, _} =
-      Logger.configure_backend(LoggerRemoteBackend,
+      Logger.configure_backend(LoggerBatchedBackend,
         client: {MockLogger, :log},
         client_options: %{test: 123},
         flush_interval: 10
@@ -61,7 +61,7 @@ defmodule LoggerRemoteBackendTest do
   @tag capture_log: true
   test "sends all messages in queue" do
     {:ok, _} =
-      Logger.configure_backend(LoggerRemoteBackend,
+      Logger.configure_backend(LoggerBatchedBackend,
         client: {MockLogger, :log},
         client_options: %{test: 123},
         flush_interval: 10
@@ -81,7 +81,7 @@ defmodule LoggerRemoteBackendTest do
   @tag capture_log: true
   test "requeues messages" do
     {:ok, _} =
-      Logger.configure_backend(LoggerRemoteBackend,
+      Logger.configure_backend(LoggerBatchedBackend,
         client: {MockLogger, :log},
         client_options: %{test: 123}
       )
@@ -104,7 +104,7 @@ defmodule LoggerRemoteBackendTest do
   @tag capture_log: true
   test "flushes all messages immediately when queue is full" do
     {:ok, _} =
-      Logger.configure_backend(LoggerRemoteBackend,
+      Logger.configure_backend(LoggerBatchedBackend,
         client: {MockLogger, :log},
         client_options: %{test: 123},
         flush_interval: nil,
@@ -125,7 +125,7 @@ defmodule LoggerRemoteBackendTest do
   @tag capture_log: true
   test "filters by log level" do
     {:ok, _} =
-      Logger.configure_backend(LoggerRemoteBackend,
+      Logger.configure_backend(LoggerBatchedBackend,
         client: {MockLogger, :log},
         client_options: %{test: 123},
         level: :warn

@@ -1,4 +1,4 @@
-defmodule LoggerRemoteBackend do
+defmodule LoggerBatchedBackend do
   @behaviour :gen_event
 
   @options ~w(flush_interval max_batch client client_options level)a
