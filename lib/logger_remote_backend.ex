@@ -1,0 +1,75 @@
+defmodule LoggerRemoteBackend do
+  @behaviour :gen_event
+
+  @options ~w(flush_interval max_batch client client_options level)a
+
+  def init(__MODULE__) do
+    %{
+      queue: [],
+      timer: nil,
+      flush_interval: 1000 * 15,
+      max_batch: 10,
+      client: nil,
+      client_options: [],
+      level: :debug
+    }
+    |> schedule_flush()
+  end
+
+  def handle_call({:configure, opts}, state) do
+    {:ok, new_state} =
+      opts
+      |> Enum.into(%{})
+      |> Map.take(@options)
+      |> Enum.into(state)
+      |> schedule_flush()
+
+    {:ok, {:ok, new_state}, new_state}
+  end
+
+  def handle_event({level, _group_leader, {Logger, message, timestamp, metadata}}, state) do
+    if should_log?(state, level) do
+      enqueue(state, {level, message, timestamp, metadata})
+    else
+      {:ok, state}
+    end
+  end
+
+  def handle_event(:flush, state), do: flush!(state)
+
+  def handle_info(:flush, state) do
+    state
+    |> flush!()
+    |> schedule_flush()
+  end
+
+  def handle_info(_term, state), do: {:ok, state}
+
+  defp enqueue(%{queue: queue, max_batch: max_batch} = state, msg)
+       when length(queue) + 1 < max_batch,
+       do: {:ok, %{state | queue: queue ++ [msg]}}
+
+  defp enqueue(%{queue: queue} = state, msg) do
+    flush!(%{state | queue: queue ++ [msg]}) |> schedule_flush()
+  end
+
+  defp schedule_flush({:ok, state}), do: schedule_flush(state)
+
+  defp schedule_flush(%{flush_interval: nil} = state), do: {:ok, state}
+
+  defp schedule_flush(%{flush_interval: interval, timer: timer} = state) do
+    if timer, do: Process.cancel_timer(timer, async: true)
+    timer = Process.send_after(self(), :flush, interval)
+    {:ok, %{state | timer: timer}}
+  end
+
+  defp flush!(%{queue: []} = state), do: {:ok, state}
+
+  defp flush!(%{client: {module, method}, client_options: opts, queue: queue} = state) do
+    with {:ok, queue} <- apply(module, method, [opts, queue]) do
+      {:ok, %{state | queue: queue}}
+    end
+  end
+
+  defp should_log?(%{level: min_level}, level), do: Logger.compare_levels(level, min_level)
+end
