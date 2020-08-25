@@ -56,6 +56,7 @@ defmodule LoggerBatchedBackend do
   end
 
   defp schedule_flush({:ok, state}), do: schedule_flush(state)
+  defp schedule_flush({:error, _} = error), do: error
 
   defp schedule_flush(%{flush_interval: nil} = state), do: {:ok, state}
 
@@ -70,12 +71,16 @@ defmodule LoggerBatchedBackend do
   defp flush!(%{client: {module, method}, client_options: opts, queue: queue} = state) do
     with {:ok, queue} <- apply(module, method, [opts, queue]) do
       {:ok, %{state | queue: queue}}
+    else
+      {:error, error} -> {:error, error}
+      error -> {:error, error}
     end
   end
 
   defp flush!(state), do: {:ok, state}
 
-  defp should_log?(%{level: min_level}, level), do: Logger.compare_levels(level, min_level)
+  defp should_log?(%{level: min_level}, level),
+    do: Logger.compare_levels(level, min_level) != :lt
 
   defp get_timestamp(%{timestamp: {module, method}}), do: apply(module, method, [])
   defp get_timestamp(%{timestamp: fun}) when is_function(fun), do: fun.()
