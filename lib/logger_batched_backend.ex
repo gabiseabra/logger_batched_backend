@@ -1,7 +1,7 @@
 defmodule LoggerBatchedBackend do
   @behaviour :gen_event
 
-  @options ~w(flush_interval max_batch client client_options level)a
+  @options ~w(flush_interval max_batch client client_options timestamp level)a
 
   @initial_state %{
     queue: [],
