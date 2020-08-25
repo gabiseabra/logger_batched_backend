@@ -3,27 +3,27 @@ defmodule LoggerBatchedBackend do
 
   @options ~w(flush_interval max_batch client client_options level)a
 
+  @initial_state %{
+    queue: [],
+    timer: nil,
+    flush_interval: 1000 * 15,
+    max_batch: 10,
+    client: nil,
+    client_options: [],
+    level: :debug
+  }
+
   def init(__MODULE__) do
-    %{
-      queue: [],
-      timer: nil,
-      flush_interval: 1000 * 15,
-      max_batch: 10,
-      client: nil,
-      client_options: [],
-      level: :debug
-    }
-    |> schedule_flush()
+    configure([], @initial_state)
+  end
+
+  def init({__MODULE__, name}) do
+    Application.get_env(:logger, name, [])
+    |> configure(@initial_state)
   end
 
   def handle_call({:configure, opts}, state) do
-    {:ok, new_state} =
-      opts
-      |> Enum.into(%{})
-      |> Map.take(@options)
-      |> Enum.into(state)
-      |> schedule_flush()
-
+    {:ok, new_state} = configure(opts, state)
     {:ok, {:ok, new_state}, new_state}
   end
 
@@ -71,5 +71,18 @@ defmodule LoggerBatchedBackend do
     end
   end
 
+  defp flush!(state), do: {:ok, state}
+
   defp should_log?(%{level: min_level}, level), do: Logger.compare_levels(level, min_level)
+
+  defp configure(opts, state) do
+    {:ok, new_state} =
+      opts
+      |> Enum.into(%{})
+      |> Map.take(@options)
+      |> Enum.into(state)
+      |> schedule_flush()
+
+    {:ok, new_state}
+  end
 end
