@@ -7,7 +7,10 @@ defmodule LoggerBatchedBackend.MixProject do
       version: "0.1.0",
       elixir: "~> 1.9",
       start_permanent: Mix.env() == :prod,
+      build_embedded: Mix.env() == :prod,
+      source_url: "https://github.com/gabiseabra/logger_batched_backend",
       package: package(),
+      description: description(),
       deps: deps()
     ]
   end
@@ -24,6 +27,10 @@ defmodule LoggerBatchedBackend.MixProject do
     [
       {:mox, "~> 0.5", only: :test}
     ]
+  end
+
+  defp description() do
+    "Service agnostic logger backend that handles batching and retries."
   end
 
   defp package() do
