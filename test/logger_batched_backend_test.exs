@@ -143,4 +143,24 @@ defmodule LoggerBatchedBackendTest do
 
     Logger.flush()
   end
+
+  @tag capture_log: true
+  test "overrides timestamp with method" do
+    {:ok, _} =
+      Logger.configure_backend(LoggerBatchedBackend,
+        client: {MockLogger, :log},
+        client_options: %{test: 123},
+        level: :warn,
+        timestamp: fn -> "2020-01-01" end
+      )
+
+    MockLogger
+    |> expect(:log, fn %{test: 123}, [{:warn, "eyy", "2020-01-01", _}] ->
+      {:ok, []}
+    end)
+
+    Logger.debug("eyy")
+
+    Logger.flush()
+  end
 end

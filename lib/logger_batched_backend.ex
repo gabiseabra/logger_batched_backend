@@ -10,6 +10,7 @@ defmodule LoggerBatchedBackend do
     max_batch: 10,
     client: nil,
     client_options: [],
+    timestamp: nil,
     level: :debug
   }
 
@@ -29,6 +30,7 @@ defmodule LoggerBatchedBackend do
 
   def handle_event({level, _group_leader, {Logger, message, timestamp, metadata}}, state) do
     if should_log?(state, level) do
+      timestamp = get_timestamp(state) || timestamp
       enqueue(state, {level, message, timestamp, metadata})
     else
       {:ok, state}
@@ -74,6 +76,10 @@ defmodule LoggerBatchedBackend do
   defp flush!(state), do: {:ok, state}
 
   defp should_log?(%{level: min_level}, level), do: Logger.compare_levels(level, min_level)
+
+  defp get_timestamp(%{timestamp: {module, method}}), do: apply(module, method, [])
+  defp get_timestamp(%{timestamp: fun}) when is_function(fun), do: fun.()
+  defp get_timestamp(_), do: nil
 
   defp configure(opts, state) do
     {:ok, new_state} =
