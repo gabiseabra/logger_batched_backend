@@ -18,15 +18,15 @@ defmodule LoggerBatchedBackendTest do
   setup :verify_on_exit!
 
   @tag capture_log: true
-  test "calls client function on flush" do
+  test "calls handler function on flush" do
     {:ok, _} =
       Logger.configure_backend(LoggerBatchedBackend,
-        client: {MockLogger, :log},
-        client_options: %{test: 123}
+        handler: {MockLogger, :log},
+        handler_options: %{test: 123}
       )
 
     MockLogger
-    |> expect(:log, fn %{test: 123}, [{:info, "eyy", _timestamp, _metadata}] -> {:ok, []} end)
+    |> expect(:log, fn [{:info, "eyy", _timestamp, _metadata}], %{test: 123} -> {:ok, []} end)
 
     Logger.info("eyy")
     Logger.flush()
@@ -36,16 +36,16 @@ defmodule LoggerBatchedBackendTest do
   test "flushes logs periodically" do
     {:ok, _} =
       Logger.configure_backend(LoggerBatchedBackend,
-        client: {MockLogger, :log},
-        client_options: %{test: 123},
+        handler: {MockLogger, :log},
+        handler_options: %{test: 123},
         flush_interval: 10
       )
 
     MockLogger
-    |> expect(:log, fn %{test: 123}, [{:info, "eyy", _, _}] ->
+    |> expect(:log, fn [{:info, "eyy", _, _}], %{test: 123} ->
       {:ok, []}
     end)
-    |> expect(:log, fn %{test: 123}, [{:info, "lmao", _, _}] ->
+    |> expect(:log, fn [{:info, "lmao", _, _}], %{test: 123} ->
       {:ok, []}
     end)
 
@@ -62,13 +62,13 @@ defmodule LoggerBatchedBackendTest do
   test "sends all messages in queue" do
     {:ok, _} =
       Logger.configure_backend(LoggerBatchedBackend,
-        client: {MockLogger, :log},
-        client_options: %{test: 123},
+        handler: {MockLogger, :log},
+        handler_options: %{test: 123},
         flush_interval: 10
       )
 
     MockLogger
-    |> expect(:log, fn %{test: 123}, [{:info, "eyy", _, _}, {:info, "lmao", _, _}] ->
+    |> expect(:log, fn [{:info, "eyy", _, _}, {:info, "lmao", _, _}], %{test: 123} ->
       {:ok, []}
     end)
 
@@ -82,15 +82,15 @@ defmodule LoggerBatchedBackendTest do
   test "requeues messages" do
     {:ok, _} =
       Logger.configure_backend(LoggerBatchedBackend,
-        client: {MockLogger, :log},
-        client_options: %{test: 123}
+        handler: {MockLogger, :log},
+        handler_options: %{test: 123}
       )
 
     MockLogger
-    |> expect(:log, fn %{test: 123}, [{:info, "eyy", _, _} | rest] ->
+    |> expect(:log, fn [{:info, "eyy", _, _} | rest], %{test: 123} ->
       {:ok, rest}
     end)
-    |> expect(:log, fn %{test: 123}, [{:info, "lmao", _, _}] ->
+    |> expect(:log, fn [{:info, "lmao", _, _}], %{test: 123} ->
       {:ok, []}
     end)
 
@@ -107,14 +107,14 @@ defmodule LoggerBatchedBackendTest do
   test "flushes all messages immediately when queue is full" do
     {:ok, _} =
       Logger.configure_backend(LoggerBatchedBackend,
-        client: {MockLogger, :log},
-        client_options: %{test: 123},
+        handler: {MockLogger, :log},
+        handler_options: %{test: 123},
         flush_interval: nil,
-        max_batch: 2
+        batch_size: 2
       )
 
     MockLogger
-    |> expect(:log, fn %{test: 123}, [{:info, "eyy", _, _}, {:info, "lmao", _, _}] ->
+    |> expect(:log, fn [{:info, "eyy", _, _}, {:info, "lmao", _, _}], %{test: 123} ->
       {:ok, []}
     end)
 
@@ -128,13 +128,13 @@ defmodule LoggerBatchedBackendTest do
   test "filters by log level" do
     {:ok, _} =
       Logger.configure_backend(LoggerBatchedBackend,
-        client: {MockLogger, :log},
-        client_options: %{test: 123},
+        handler: {MockLogger, :log},
+        handler_options: %{test: 123},
         level: :warn
       )
 
     MockLogger
-    |> expect(:log, fn %{test: 123}, [{:warn, "warn", _, _}, {:error, "error", _, _}] ->
+    |> expect(:log, fn [{:warn, "warn", _, _}, {:error, "error", _, _}], %{test: 123} ->
       {:ok, []}
     end)
 
@@ -152,14 +152,14 @@ defmodule LoggerBatchedBackendTest do
   test "overrides timestamp with method" do
     {:ok, _} =
       Logger.configure_backend(LoggerBatchedBackend,
-        client: {MockLogger, :log},
-        client_options: %{test: 123},
+        handler: {MockLogger, :log},
+        handler_options: %{test: 123},
         level: :info,
         timestamp: fn -> "2020-01-01" end
       )
 
     MockLogger
-    |> expect(:log, fn %{test: 123}, [{:info, "eyy", "2020-01-01", _}] ->
+    |> expect(:log, fn [{:info, "eyy", "2020-01-01", _}], %{test: 123} ->
       {:ok, []}
     end)
 

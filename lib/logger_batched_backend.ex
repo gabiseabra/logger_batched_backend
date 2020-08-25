@@ -1,15 +1,19 @@
 defmodule LoggerBatchedBackend do
+  @moduledoc """
+  Logger backend for sending messages in batches with a custom handler.
+  """
+
   @behaviour :gen_event
 
-  @options ~w(flush_interval max_batch client client_options timestamp level)a
+  @options ~w(flush_interval batch_size handler handler_options timestamp level)a
 
   @initial_state %{
     queue: [],
     timer: nil,
     flush_interval: 1000 * 15,
-    max_batch: 10,
-    client: nil,
-    client_options: [],
+    batch_size: 10,
+    handler: nil,
+    handler_options: [],
     timestamp: nil,
     level: :debug
   }
@@ -47,8 +51,8 @@ defmodule LoggerBatchedBackend do
 
   def handle_info(_term, state), do: {:ok, state}
 
-  defp enqueue(%{queue: queue, max_batch: max_batch} = state, msg)
-       when length(queue) + 1 < max_batch,
+  defp enqueue(%{queue: queue, batch_size: batch_size} = state, msg)
+       when length(queue) + 1 < batch_size,
        do: {:ok, %{state | queue: queue ++ [msg]}}
 
   defp enqueue(%{queue: queue} = state, msg) do
@@ -68,8 +72,8 @@ defmodule LoggerBatchedBackend do
 
   defp flush!(%{queue: []} = state), do: {:ok, state}
 
-  defp flush!(%{client: {module, method}, client_options: opts, queue: queue} = state) do
-    with {:ok, queue} <- apply(module, method, [opts, queue]) do
+  defp flush!(%{handler: {module, method}, handler_options: opts, queue: queue} = state) do
+    with {:ok, queue} <- apply(module, method, [queue, opts]) do
       {:ok, %{state | queue: queue}}
     else
       {:error, error} -> {:error, error}
