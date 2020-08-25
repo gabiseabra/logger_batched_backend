@@ -99,6 +99,8 @@ defmodule LoggerBatchedBackendTest do
 
     Logger.flush()
     Logger.flush()
+
+    :timer.sleep(10)
   end
 
   @tag capture_log: true
@@ -119,7 +121,7 @@ defmodule LoggerBatchedBackendTest do
     Logger.info("eyy")
     Logger.info("lmao")
 
-    :timer.sleep(100)
+    :timer.sleep(10)
   end
 
   @tag capture_log: true
@@ -142,6 +144,8 @@ defmodule LoggerBatchedBackendTest do
     Logger.error("error")
 
     Logger.flush()
+
+    :timer.sleep(10)
   end
 
   @tag capture_log: true
@@ -150,17 +154,19 @@ defmodule LoggerBatchedBackendTest do
       Logger.configure_backend(LoggerBatchedBackend,
         client: {MockLogger, :log},
         client_options: %{test: 123},
-        level: :warn,
+        level: :info,
         timestamp: fn -> "2020-01-01" end
       )
 
     MockLogger
-    |> expect(:log, fn %{test: 123}, [{:warn, "eyy", "2020-01-01", _}] ->
+    |> expect(:log, fn %{test: 123}, [{:info, "eyy", "2020-01-01", _}] ->
       {:ok, []}
     end)
 
-    Logger.debug("eyy")
+    Logger.info("eyy")
 
     Logger.flush()
+
+    :timer.sleep(10)
   end
 end
